@@ -1,0 +1,14 @@
+{
+  "archive_crc": "passed",
+  "manifest_sha256": "passed",
+  "clean_offline_environment": "passed",
+  "alembic_initialization": "passed",
+  "real_http_startup": "passed",
+  "demo_login": "passed",
+  "local_swagger_assets": "passed",
+  "meal_record": "passed",
+  "three_recommendations": "passed",
+  "local_chat": "passed",
+  "restart_preserves_data_and_jwt": "passed",
+  "windows_launcher": "passed"
+}

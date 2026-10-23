@@ -1,0 +1,10 @@
+[
+  {"title":"能量估算的局限", "keywords":["热量","卡路里","能量","大卡","千卡"], "answer":"食物热量受份量、烹饪方法和用油量影响。建议记录实际可食重量，并把额外使用的油和酱料单独计入。系统中的演示值用于验证流程，不能当作经过检测的营养数据。", "url":"https://www.niddk.nih.gov/health-information/weight-management/just-enough-food-portions"},
+  {"title":"蛋白质的一般知识", "keywords":["蛋白","增肌","肌肉"], "answer":"蛋白质来源包括鱼、禽、蛋、豆类和奶类。运动人群的需要量存在个体差异；本项目按固定参数估算目标，不能保证增肌效果。选择食物时也要考虑整体能量和饮食多样性。", "url":"https://www.myplate.gov/eat-healthy/protein-foods"},
+  {"title":"碳水化合物的一般知识", "keywords":["碳水","主食","米饭","面条","全谷"], "answer":"谷物、水果和豆类都可提供碳水化合物。可在饮食中加入全谷物，并结合个人习惯选择份量，不必因为想管理体重就完全去掉主食。", "url":"https://www.myplate.gov/eat-healthy/grains"},
+  {"title":"脂肪与用油记录", "keywords":["脂肪","油","坚果"], "answer":"食用油和坚果也会贡献能量。记录烹调用油可以减少漏记；不同食物含有不同类型的脂肪，营养判断应结合整体饮食。", "url":"https://www.who.int/news-room/fact-sheets/detail/healthy-diet"},
+  {"title":"份量与照片识别", "keywords":["份量","克数","拍照","识别","称重"], "answer":"单张照片通常无法可靠确定食物重量和隐形用油。本系统的视觉接口只返回候选名称，必须由你核对食物并填写克数后才会写入记录。可以使用厨房秤辅助录入。", "url":"https://www.niddk.nih.gov/health-information/weight-management/just-enough-food-portions"},
+  {"title":"体重管理工具的适用范围", "keywords":["减脂","减肥","体重","目标","代谢","BMR"], "answer":"营养目标是估算值，活动量和个人情况会影响实际需要。项目中的目标下限和调整比例属于课程原型规则，不能证明适合每个人。孕哺期、未成年人和需要疾病饮食管理的人应采用专业评估。", "url":"https://www.niddk.nih.gov/health-information/weight-management/body-weight-planner"},
+  {"title":"蔬菜和水果", "keywords":["蔬菜","水果","维生素","纤维"], "answer":"可通过不同种类的蔬菜、水果和全谷物增加膳食多样性。本项目目前主要统计热量及三大营养素，不能据此判断维生素和矿物质是否充足。", "url":"https://www.who.int/news-room/fact-sheets/detail/healthy-diet"},
+  {"title":"饮食记录操作", "keywords":["记录","删除","修改","怎么用"], "answer":"先在食物库查到食物编号，再提交克数、餐次和日期。填错时可修改或删除自己的记录。每日统计会根据已保存记录重新汇总，修改食物库不会自动改写历史饮食快照。", "url":"https://fastapi.tiangolo.com/tutorial/"}
+]

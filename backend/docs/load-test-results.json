@@ -1,0 +1,42 @@
+{
+  "environment": "Windows / Python 3.14.8",
+  "method": "50 accounts, 50 simultaneous real HTTP requests per endpoint, SQLite, one process; rate limiter disabled for measurement; AI not exercised",
+  "results": [
+    {
+      "endpoint": "/api/meal-records/me",
+      "concurrent_users": 50,
+      "requests": 50,
+      "successes": 50,
+      "p50_ms": 277.54,
+      "p95_ms": 330.77,
+      "max_ms": 335.43
+    },
+    {
+      "endpoint": "/api/nutrition/daily",
+      "concurrent_users": 50,
+      "requests": 50,
+      "successes": 50,
+      "p50_ms": 268.54,
+      "p95_ms": 311.8,
+      "max_ms": 313.09
+    },
+    {
+      "endpoint": "/api/nutrition/progress",
+      "concurrent_users": 50,
+      "requests": 50,
+      "successes": 50,
+      "p50_ms": 305.68,
+      "p95_ms": 344.01,
+      "max_ms": 352.83
+    },
+    {
+      "endpoint": "/api/recommendations",
+      "concurrent_users": 50,
+      "requests": 50,
+      "successes": 50,
+      "p50_ms": 489.23,
+      "p95_ms": 726.1,
+      "max_ms": 738.72
+    }
+  ]
+}

@@ -1,0 +1,13 @@
+.venv/
+.env
+__pycache__/
+*.pyc
+.pytest_cache/
+data/runtime/
+.build*/
+.setup-tmp/
+*.db
+*.db-journal
+*.db-shm
+*.db-wal
+wheelhouse/
