@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
+import '../services/auth_service.dart';
+import '../services/session.dart';
 import '../theme.dart';
 
 /// Tab 4 · 我的：身体档案 + 目标 + 设置
 class ProfilePage extends StatefulWidget {
-  const ProfilePage({super.key});
+  final Future<void> Function() onLogout;
+  const ProfilePage({super.key, required this.onLogout});
 
   @override
   State<ProfilePage> createState() => _ProfilePageState();
@@ -30,10 +33,14 @@ class _ProfilePageState extends State<ProfilePage> {
                 const SizedBox(width: 16),
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
-                  children: const [
-                    Text('健身同学', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
-                    SizedBox(height: 4),
-                    Text('北京工商大学 · 计算机学院', style: TextStyle(fontSize: 12, color: AppColors.textLight)),
+                  children: [
+                    Text(
+                      SessionStore.username ?? '未登录',
+                      style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
+                    ),
+                    const SizedBox(height: 4),
+                    const Text('已登录 · 数据保存在本机后端',
+                        style: TextStyle(fontSize: 12, color: AppColors.textLight)),
                   ],
                 ),
               ],
@@ -127,6 +134,21 @@ class _ProfilePageState extends State<ProfilePage> {
           ),
 
           const SizedBox(height: 20),
+          SizedBox(
+            height: 44,
+            child: OutlinedButton.icon(
+              style: OutlinedButton.styleFrom(
+                foregroundColor: const Color(0xFFC62828),
+                side: const BorderSide(color: Color(0xFFFFCDD2)),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+              onPressed: _confirmLogout,
+              icon: const Icon(Icons.logout, size: 18),
+              label: const Text('退出登录'),
+            ),
+          ),
+
+          const SizedBox(height: 20),
           const Text(
             '营养数据为课程演示近似值，仅供参考，不构成医疗建议',
             textAlign: TextAlign.center,
@@ -135,6 +157,27 @@ class _ProfilePageState extends State<ProfilePage> {
         ],
       ),
     );
+  }
+
+  Future<void> _confirmLogout() async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('退出登录'),
+        content: const Text('确定要退出当前账号吗？'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('取消')),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('退出', style: TextStyle(color: Color(0xFFC62828))),
+          ),
+        ],
+      ),
+    );
+    if (ok != true) return;
+
+    await AuthService.logout();
+    if (mounted) await widget.onLogout();
   }
 
   Widget _metric(String label, String value, String unit) {

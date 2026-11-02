@@ -1,16 +1,35 @@
 import 'package:flutter/material.dart';
 import 'pages/home_page.dart';
+import 'pages/login_page.dart';
 import 'pages/profile_page.dart';
 import 'pages/scan_page.dart';
 import 'pages/search_page.dart';
+import 'services/session.dart';
 import 'theme.dart';
 
-void main() {
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await SessionStore.init(); // 读取本地保存的登录状态
   runApp(const MyApp());
 }
 
-class MyApp extends StatelessWidget {
+class MyApp extends StatefulWidget {
   const MyApp({super.key});
+
+  @override
+  State<MyApp> createState() => _MyAppState();
+}
+
+class _MyAppState extends State<MyApp> {
+  // 有 token 就直接进主界面，否则先进登录页
+  bool _loggedIn = SessionStore.hasToken;
+
+  void _onLoginSuccess() => setState(() => _loggedIn = true);
+
+  Future<void> _onLogout() async {
+    await SessionStore.clear();
+    if (mounted) setState(() => _loggedIn = false);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -18,14 +37,17 @@ class MyApp extends StatelessWidget {
       title: '智能饮食搭配推荐系统',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.light,
-      home: const MainShell(),
+      home: _loggedIn
+          ? MainShell(onLogout: _onLogout)
+          : LoginPage(onSuccess: _onLoginSuccess),
     );
   }
 }
 
 /// 主框架：四个 Tab 的底部导航
 class MainShell extends StatefulWidget {
-  const MainShell({super.key});
+  final Future<void> Function() onLogout;
+  const MainShell({super.key, required this.onLogout});
 
   @override
   State<MainShell> createState() => _MainShellState();
@@ -33,9 +55,19 @@ class MainShell extends StatefulWidget {
 
 class _MainShellState extends State<MainShell> {
   int _index = 0;
+  late final List<Widget> _pages;
 
-  // IndexedStack 保留各 Tab 的滚动位置和状态，切换不丢失
-  static const _pages = [HomePage(), ScanPage(), SearchPage(), ProfilePage()];
+  @override
+  void initState() {
+    super.initState();
+    // IndexedStack 保留各 Tab 的滚动位置和状态，切换不丢失
+    _pages = [
+      const HomePage(),
+      const ScanPage(),
+      const SearchPage(),
+      ProfilePage(onLogout: widget.onLogout),
+    ];
+  }
 
   @override
   Widget build(BuildContext context) {
