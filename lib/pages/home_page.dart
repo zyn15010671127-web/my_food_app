@@ -16,10 +16,10 @@ class HomePage extends StatefulWidget {
   const HomePage({super.key, this.dashboardLoader});
 
   @override
-  State<HomePage> createState() => _HomePageState();
+  State<HomePage> createState() => HomePageState();
 }
 
-class _HomePageState extends State<HomePage> {
+class HomePageState extends State<HomePage> {
   late Future<HomeDashboard> _dashboardFuture;
 
   @override
@@ -48,6 +48,9 @@ class _HomePageState extends State<HomePage> {
       await next;
     } catch (_) {}
   }
+
+  /// 识别页保存记录后，主框架切回首页时调用。
+  Future<void> refresh() => _refresh();
 
   @override
   Widget build(BuildContext context) {

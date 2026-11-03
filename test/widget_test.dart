@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:my_food_app/models/nutrition.dart';
+import 'package:my_food_app/models/recognition.dart';
 import 'package:my_food_app/pages/home_page.dart';
+import 'package:my_food_app/pages/scan_page.dart';
 
 HomeDashboard _fakeDashboard() {
   final progress = NutritionProgress.fromJson({
@@ -84,5 +86,36 @@ void main() {
     await tester.scrollUntilVisible(find.text('高蛋白减脂餐'), 300);
     expect(find.text('高蛋白减脂餐'), findsOneWidget);
     expect(find.text('糙米饭 150g · 鸡胸肉 120g'), findsOneWidget);
+  });
+
+  test('识别降级响应和食物库 JSON 能正确解析', () {
+    final result = RecognitionResult.fromJson({
+      'id': 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+      'image_id': 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
+      'status': 'manual_required',
+      'mode': 'local_fallback',
+      'message': '请手动核对',
+      'dishes': <dynamic>[],
+      'confirmed_record_ids': <dynamic>[],
+    });
+    final food = FoodOption.fromJson({
+      'id': 1,
+      'name': '测试食物',
+      'calories_kcal': 100,
+      'protein_g': 5,
+      'carbs_g': 15,
+      'fat_g': 3,
+    });
+    expect(result.status, 'manual_required');
+    expect(result.dishes, isEmpty);
+    expect(food.name, '测试食物');
+    expect(food.calories, 100.0);
+  });
+
+  testWidgets('识别页初始状态正常渲染', (WidgetTester tester) async {
+    await tester.pumpWidget(const MaterialApp(home: ScanPage()));
+    expect(find.text('拍照识别'), findsOneWidget);
+    expect(find.text('拍摄或选择菜品照片'), findsOneWidget);
+    expect(find.text('允许使用外部视觉服务'), findsOneWidget);
   });
 }

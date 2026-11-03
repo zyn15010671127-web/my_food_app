@@ -55,6 +55,7 @@ class MainShell extends StatefulWidget {
 
 class _MainShellState extends State<MainShell> {
   int _index = 0;
+  final GlobalKey<HomePageState> _homeKey = GlobalKey<HomePageState>();
   late final List<Widget> _pages;
 
   @override
@@ -62,11 +63,18 @@ class _MainShellState extends State<MainShell> {
     super.initState();
     // IndexedStack 保留各 Tab 的滚动位置和状态，切换不丢失
     _pages = [
-      const HomePage(),
+      HomePage(key: _homeKey),
       const ScanPage(),
       const SearchPage(),
       ProfilePage(onLogout: widget.onLogout),
     ];
+  }
+
+  void _onTabSelected(int index) {
+    setState(() => _index = index);
+    if (index == 0) {
+      _homeKey.currentState?.refresh();
+    }
   }
 
   @override
@@ -75,7 +83,7 @@ class _MainShellState extends State<MainShell> {
       body: IndexedStack(index: _index, children: _pages),
       bottomNavigationBar: NavigationBar(
         selectedIndex: _index,
-        onDestinationSelected: (i) => setState(() => _index = i),
+        onDestinationSelected: _onTabSelected,
         destinations: const [
           NavigationDestination(
             icon: Icon(Icons.home_outlined),

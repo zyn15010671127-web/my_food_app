@@ -37,10 +37,40 @@ class ApiClient {
     return _handle(res);
   }
 
-  static Future<dynamic> post(String path, Map<String, dynamic> body, {bool auth = false}) async {
+  static Future<dynamic> post(
+    String path,
+    Map<String, dynamic> body, {
+    bool auth = false,
+    Duration? timeout,
+  }) async {
     final res = await http
-        .post(Uri.parse('$baseUrl$path'), headers: _headers(auth: auth), body: jsonEncode(body))
-        .timeout(_timeout);
+        .post(
+          Uri.parse('$baseUrl$path'),
+          headers: _headers(auth: auth),
+          body: jsonEncode(body),
+        )
+        .timeout(timeout ?? _timeout);
+    return _handle(res);
+  }
+
+  /// 以 multipart/form-data 上传图片，不能沿用 JSON 请求的 Content-Type。
+  static Future<dynamic> uploadBytes(
+    String path,
+    List<int> bytes,
+    String filename, {
+    bool auth = false,
+  }) async {
+    final request = http.MultipartRequest(
+      'POST',
+      Uri.parse('$baseUrl$path'),
+    );
+    final headers = _headers(auth: auth)..remove('Content-Type');
+    request.headers.addAll(headers);
+    request.files.add(
+      http.MultipartFile.fromBytes('file', bytes, filename: filename),
+    );
+    final streamed = await request.send().timeout(const Duration(seconds: 20));
+    final res = await http.Response.fromStream(streamed);
     return _handle(res);
   }
 
