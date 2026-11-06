@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'records_page.dart';
 import '../services/auth_service.dart';
 import '../services/session.dart';
 import '../theme.dart';
@@ -122,7 +123,18 @@ class _ProfilePageState extends State<ProfilePage> {
             padding: EdgeInsets.zero,
             child: Column(
               children: [
-                _tile(Icons.history, '历史饮食记录', '近 30 天'),
+                _tile(
+                  Icons.history,
+                  '历史饮食记录',
+                  '按日期查看',
+                  onTap: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute<void>(
+                        builder: (_) => const RecordsPage(),
+                      ),
+                    );
+                  },
+                ),
                 const Divider(height: 1, indent: 52),
                 _tile(Icons.chat_bubble_outline, '营养顾问', 'AI 在线答疑'),
                 const Divider(height: 1, indent: 52),
@@ -198,18 +210,27 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
-  Widget _tile(IconData icon, String title, String subtitle) {
+  Widget _tile(
+    IconData icon,
+    String title,
+    String subtitle, {
+    VoidCallback? onTap,
+  }) {
     return ListTile(
       leading: Icon(icon, size: 20, color: AppColors.primary),
       title: Text(title, style: const TextStyle(fontSize: 14)),
       subtitle: Text(subtitle, style: const TextStyle(fontSize: 11)),
       trailing: const Icon(Icons.chevron_right, size: 18, color: AppColors.textLight),
       dense: true,
-      onTap: () {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('「$title」将在下一版本接入'), duration: const Duration(seconds: 1)),
-        );
-      },
+      onTap: onTap ??
+          () {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('「$title」将在下一版本接入'),
+                duration: const Duration(seconds: 1),
+              ),
+            );
+          },
     );
   }
 }

@@ -74,6 +74,13 @@ class ApiClient {
     return _handle(res);
   }
 
+  static Future<dynamic> delete(String path, {bool auth = false}) async {
+    final res = await http
+        .delete(Uri.parse('$baseUrl$path'), headers: _headers(auth: auth))
+        .timeout(_timeout);
+    return _handle(res);
+  }
+
   static dynamic _handle(http.Response res) {
     final text = utf8.decode(res.bodyBytes);
     dynamic data;

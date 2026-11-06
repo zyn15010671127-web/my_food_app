@@ -1,9 +1,28 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:my_food_app/models/meal_record.dart';
 import 'package:my_food_app/models/nutrition.dart';
 import 'package:my_food_app/models/recognition.dart';
 import 'package:my_food_app/pages/home_page.dart';
+import 'package:my_food_app/pages/records_page.dart';
 import 'package:my_food_app/pages/scan_page.dart';
+import 'package:my_food_app/pages/search_page.dart';
+
+MealRecord _fakeMealRecord() {
+  return MealRecord.fromJson({
+    'id': 1,
+    'food_id': 1,
+    'food_name': '米饭（熟）',
+    'grams': 150,
+    'meal_type': 'lunch',
+    'record_date': '2026-11-05',
+    'calories_kcal': 174,
+    'protein_g': 3.9,
+    'carbs_g': 38.85,
+    'fat_g': 0.45,
+    'source': 'manual',
+  });
+}
 
 HomeDashboard _fakeDashboard() {
   final progress = NutritionProgress.fromJson({
@@ -117,5 +136,52 @@ void main() {
     expect(find.text('拍照识别'), findsOneWidget);
     expect(find.text('拍摄或选择菜品照片'), findsOneWidget);
     expect(find.text('允许使用外部视觉服务'), findsOneWidget);
+  });
+
+  test('饮食记录 JSON 能正确解析', () {
+    final record = _fakeMealRecord();
+    expect(record.foodName, '米饭（熟）');
+    expect(record.grams, 150.0);
+    expect(record.calories, 174.0);
+    expect(record.mealType, 'lunch');
+  });
+
+  testWidgets('食物库展示接口返回的食物', (WidgetTester tester) async {
+    const food = FoodOption(
+      id: 5,
+      name: '鸡胸肉（水煮）',
+      calories: 133,
+      protein: 23.3,
+      carbs: 0,
+      fat: 3.6,
+    );
+    await tester.pumpWidget(
+      MaterialApp(
+        home: SearchPage(
+          foodLoader: ({
+            required String query,
+            required int offset,
+            required int limit,
+          }) async => [food],
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('鸡胸肉（水煮）'), findsOneWidget);
+    expect(find.text('133'), findsOneWidget);
+  });
+
+  testWidgets('饮食记录页展示餐次和食物', (WidgetTester tester) async {
+    final record = _fakeMealRecord();
+    await tester.pumpWidget(
+      MaterialApp(
+        home: RecordsPage(recordsLoader: (_) async => [record]),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('饮食记录'), findsOneWidget);
+    expect(find.text('午餐'), findsOneWidget);
+    expect(find.text('米饭（熟）'), findsOneWidget);
+    expect(find.text('174'), findsOneWidget);
   });
 }
