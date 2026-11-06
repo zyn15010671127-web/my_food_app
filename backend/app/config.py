@@ -27,6 +27,9 @@ class Settings:
     ai_api_key: str = ""
     chat_model: str = ""
     vision_model: str = ""
+    baidu_dish_enabled: bool = False
+    baidu_api_key: str = ""
+    baidu_secret_key: str = ""
     rate_limit_enabled: bool = True
 
     def prepare(self):
@@ -50,6 +53,8 @@ class Settings:
             raise RuntimeError("生产环境必须关闭 SEED_DEMO_DATA 和 AUTO_CREATE_TABLES，并先运行数据库迁移")
         if self.ai_enabled and (not self.ai_base_url.startswith("https://") or not self.ai_api_key):
             raise RuntimeError("外部 AI 开启时必须配置 HTTPS 地址和 API 密钥")
+        if self.baidu_dish_enabled and (not self.baidu_api_key or not self.baidu_secret_key):
+            raise RuntimeError("百度菜品识别开启时必须配置 BAIDU_API_KEY 和 BAIDU_SECRET_KEY")
         return self
 
 
@@ -75,5 +80,8 @@ def load_settings() -> Settings:
         ai_api_key=os.getenv("AI_API_KEY", ""),
         chat_model=os.getenv("AI_CHAT_MODEL", ""),
         vision_model=os.getenv("AI_VISION_MODEL", ""),
+        baidu_dish_enabled=flag("ENABLE_BAIDU_DISH", False),
+        baidu_api_key=os.getenv("BAIDU_API_KEY", ""),
+        baidu_secret_key=os.getenv("BAIDU_SECRET_KEY", ""),
         rate_limit_enabled=flag("RATE_LIMIT_ENABLED", True),
     ).prepare()

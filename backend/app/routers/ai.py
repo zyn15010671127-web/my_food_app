@@ -15,7 +15,7 @@ from app.schemas import (ChatRequest, ChatResponse, DispatchRequest, MealRead, M
 from app.services.catalog import make_meal
 from app.services.knowledge import answer
 from app.services.nutrition import daily_progress, today
-from app.services.provider import ProviderError, identify
+from app.services.provider import ProviderError, identify, identify_baidu_dish
 from app.services.recommendation import recommend
 
 router = APIRouter()
@@ -91,12 +91,19 @@ def run_recognition(data, request, session, user):
     settings = request.app.state.settings
     result = Recognition(user_id=user.id, image_id=image.id,
         message="未启用外部视觉服务，请搜索食物并手动确认份量。")
-    if settings.ai_enabled and settings.vision_model and data.allow_external_processing:
+    baidu_ready = bool(settings.baidu_dish_enabled and settings.baidu_api_key and settings.baidu_secret_key)
+    generic_ready = bool(settings.ai_enabled and settings.vision_model and settings.ai_api_key)
+    if data.allow_external_processing and (baidu_ready or generic_ready):
         try:
             path = image_path(settings, image)
             if not path.is_file():
                 raise HTTPException(404, "图片文件不存在")
-            dishes = identify(settings, path.read_bytes())
+            if baidu_ready:
+                dishes = identify_baidu_dish(settings, path.read_bytes())
+                mode = "baidu_dish"
+            else:
+                dishes = identify(settings, path.read_bytes())
+                mode = "external_vision"
             foods = session.exec(select(Food).where(Food.is_active == True)).all()  # noqa: E712
             matched = []
             for dish in dishes:
@@ -105,11 +112,11 @@ def run_recognition(data, request, session, user):
                     "requires_grams": True, "note": "名称和份量须由用户核对；没有可靠位置框时不绘制识别框。"})
             result.dishes = matched
             result.status = "recognized" if dishes else "manual_required"
-            result.mode = "external_vision"
+            result.mode = mode
             result.message = "请核对名称、选择食物库条目并填写实际克数后确认保存。" if dishes else "未识别到食物，请手动录入。"
         except ProviderError:
             result.message = "外部识别服务不可用或返回格式无效，请手动搜索食物录入。"
-    elif settings.ai_enabled and not data.allow_external_processing:
+    elif (settings.ai_enabled or settings.baidu_dish_enabled) and not data.allow_external_processing:
         result.message = "本次未同意将图片发送至外部服务，请手动搜索食物录入。"
     session.add(result)
     session.commit()

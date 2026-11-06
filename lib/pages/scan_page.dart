@@ -256,7 +256,11 @@ class _ScanPageState extends State<ScanPage> {
             const SizedBox(height: 20),
             SectionTitle(
               _result!.dishes.isEmpty ? '请手动核对' : '核对识别结果',
-              trailing: _result!.mode == 'external_vision' ? '外部视觉服务' : '手动核对模式',
+              trailing: _result!.mode == 'baidu_dish'
+                  ? '百度菜品识别'
+                  : _result!.mode == 'external_vision'
+                      ? '外部视觉服务'
+                      : '手动核对模式',
             ),
             const SizedBox(height: 12),
             AppCard(

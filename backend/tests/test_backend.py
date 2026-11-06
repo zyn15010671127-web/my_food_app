@@ -9,6 +9,7 @@ from sqlmodel import Session, select
 
 from app.models import MealRecord, User
 from app.security import create_token
+from app.services import provider
 from app.services.nutrition import today
 from conftest import login
 
@@ -296,6 +297,83 @@ def test_external_processing_requires_consent(client, headers, monkeypatch):
     image_id = upload(client, headers)
     result = client.post("/api/recognitions", headers=headers, json={"image_id": image_id})
     assert result.json()["status"] == "manual_required"
+
+
+def test_baidu_dish_auth_and_top1(client, headers, monkeypatch):
+    settings = client.app.state.settings
+    settings.baidu_dish_enabled = True
+    settings.baidu_api_key = "test-baidu-key"
+    settings.baidu_secret_key = "test-baidu-secret"
+    monkeypatch.setattr(provider, "_baidu_token_cache", {})
+    calls = []
+
+    def fake_post(url, **kwargs):
+        calls.append(url)
+        request = httpx.Request("POST", url)
+        if url == provider._BAIDU_TOKEN_URL:
+            assert kwargs["params"]["grant_type"] == "client_credentials"
+            assert kwargs["params"]["client_id"] == "test-baidu-key"
+            assert kwargs["params"]["client_secret"] == "test-baidu-secret"
+            return httpx.Response(200, request=request,
+                json={"access_token": "test-baidu-token", "expires_in": 2592000})
+        assert url == provider._BAIDU_DISH_URL
+        assert kwargs["params"] == {"access_token": "test-baidu-token"}
+        assert kwargs["data"]["top_num"] == 5
+        assert kwargs["data"]["image"]
+        return httpx.Response(200, request=request, json={"result": [
+            {"name": "鱼香肉丝", "probability": "0.96"},
+            {"name": "宫保鸡丁", "probability": "0.02"},
+        ]})
+
+    monkeypatch.setattr(provider.httpx, "post", fake_post)
+    image_id = upload(client, headers)
+    response = client.post("/api/recognitions", headers=headers,
+        json={"image_id": image_id, "allow_external_processing": True})
+    assert response.status_code == 201, response.text
+    result = response.json()
+    assert result["mode"] == "baidu_dish" and result["status"] == "recognized"
+    assert len(result["dishes"]) == 1
+    assert result["dishes"][0]["name"] == "鱼香肉丝"
+    assert result["dishes"][0]["confidence"] == 0.96
+    assert result["dishes"][0]["food_id"] is not None
+    assert calls == [provider._BAIDU_TOKEN_URL, provider._BAIDU_DISH_URL]
+
+
+def test_baidu_dish_failure_falls_back(client, headers, monkeypatch):
+    settings = client.app.state.settings
+    settings.baidu_dish_enabled = True
+    settings.baidu_api_key = "test-baidu-key"
+    settings.baidu_secret_key = "test-baidu-secret"
+    monkeypatch.setattr(provider, "_baidu_access_token", lambda settings: "test-token")
+
+    def fake_post(url, **kwargs):
+        return httpx.Response(200, request=httpx.Request("POST", url),
+            json={"error_code": 216201, "error_msg": "invalid image"})
+
+    monkeypatch.setattr(provider.httpx, "post", fake_post)
+    image_id = upload(client, headers)
+    response = client.post("/api/recognitions", headers=headers,
+        json={"image_id": image_id, "allow_external_processing": True})
+    assert response.status_code == 201
+    assert response.json()["status"] == "manual_required"
+    assert "手动" in response.json()["message"]
+
+
+def test_baidu_dish_requires_consent(client, headers, monkeypatch):
+    settings = client.app.state.settings
+    settings.baidu_dish_enabled = True
+    settings.baidu_api_key = "test-baidu-key"
+    settings.baidu_secret_key = "test-baidu-secret"
+
+    def forbidden(*args, **kwargs):
+        raise AssertionError("Baidu called without consent")
+
+    monkeypatch.setattr(provider.httpx, "post", forbidden)
+    image_id = upload(client, headers)
+    response = client.post("/api/recognitions", headers=headers, json={"image_id": image_id})
+    assert response.status_code == 201
+    assert response.json()["status"] == "manual_required"
+    assert "未同意" in response.json()["message"]
 
 
 def test_chat_history_and_owner(client, headers, other_headers):
