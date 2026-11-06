@@ -172,17 +172,22 @@ def test_empty_day_and_trend_bounds(client, headers):
     assert client.get("/api/nutrition/trends", params={"start_date": str(today()), "end_date": day}, headers=headers).status_code == 422
 
 
-def test_target_math_and_saved_snapshot(client, headers):
+def test_target_math_and_profile_save_recalculates_today(client, headers):
     target = client.get("/api/nutrition/target", headers=headers).json()
     assert target["bmr_kcal"] == 1315.25 and target["tdee_kcal"] == 2038.64
     assert target["protein_g"] == 66
     profile = client.get("/api/profile/me", headers=headers).json()
     body = {key: profile[key] for key in ["sex", "age", "height_cm", "weight_kg", "goal", "activity_level", "body_fat_percent"]}
     body["weight_kg"] = 60
-    client.put("/api/profile/me", json=body, headers=headers)
-    assert client.get("/api/nutrition/target", headers=headers).json()["calories_kcal"] == target["calories_kcal"]
+    saved = client.put("/api/profile/me", json=body, headers=headers)
+    assert saved.status_code == 200 and saved.json()["weight_kg"] == 60
+    updated = client.get("/api/nutrition/target", headers=headers).json()
+    assert updated["calories_kcal"] == 2116.14 and updated["protein_g"] == 72
+    assert updated["calories_kcal"] > target["calories_kcal"]
+    progress_target = client.get("/api/nutrition/progress", headers=headers).json()["target"]
+    assert progress_target == updated
     recalculated = client.post("/api/nutrition/target/recalculate", headers=headers)
-    assert recalculated.status_code == 200 and recalculated.json()["calories_kcal"] > target["calories_kcal"]
+    assert recalculated.status_code == 200 and recalculated.json() == updated
 
 
 def test_target_missing_profile_and_past_recalculate(client, headers, other_headers):

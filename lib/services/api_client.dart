@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'session.dart';
@@ -20,6 +21,9 @@ class ApiException implements Exception {
 class ApiClient {
   static const String baseUrl = 'http://127.0.0.1:8010';
   static const Duration _timeout = Duration(seconds: 10);
+
+  /// 登录态失效时由应用入口清理会话并返回登录页。
+  static Future<void> Function()? onUnauthorized;
 
   static Map<String, String> _headers({bool auth = false}) {
     final headers = {'Content-Type': 'application/json'};
@@ -74,6 +78,21 @@ class ApiClient {
     return _handle(res);
   }
 
+  static Future<dynamic> put(
+    String path,
+    Map<String, dynamic> body, {
+    bool auth = false,
+  }) async {
+    final res = await http
+        .put(
+          Uri.parse('$baseUrl$path'),
+          headers: _headers(auth: auth),
+          body: jsonEncode(body),
+        )
+        .timeout(_timeout);
+    return _handle(res);
+  }
+
   static Future<dynamic> delete(String path, {bool auth = false}) async {
     final res = await http
         .delete(Uri.parse('$baseUrl$path'), headers: _headers(auth: auth))
@@ -91,6 +110,13 @@ class ApiClient {
     }
 
     if (res.statusCode >= 200 && res.statusCode < 300) return data;
+
+    final usedAuth =
+        res.request?.headers['Authorization']?.startsWith('Bearer ') ?? false;
+    if (res.statusCode == 401 && usedAuth) {
+      final callback = onUnauthorized;
+      if (callback != null) unawaited(callback());
+    }
 
     var msg = '请求失败（${res.statusCode}）';
     if (data is Map && data['detail'] != null) {

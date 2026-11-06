@@ -3,10 +3,14 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:my_food_app/models/meal_record.dart';
 import 'package:my_food_app/models/nutrition.dart';
 import 'package:my_food_app/models/recognition.dart';
+import 'package:my_food_app/models/user_profile.dart';
 import 'package:my_food_app/pages/home_page.dart';
+import 'package:my_food_app/pages/profile_form_page.dart';
+import 'package:my_food_app/pages/profile_page.dart';
 import 'package:my_food_app/pages/records_page.dart';
 import 'package:my_food_app/pages/scan_page.dart';
 import 'package:my_food_app/pages/search_page.dart';
+import 'package:my_food_app/services/api_client.dart';
 
 MealRecord _fakeMealRecord() {
   return MealRecord.fromJson({
@@ -21,6 +25,20 @@ MealRecord _fakeMealRecord() {
     'carbs_g': 38.85,
     'fat_g': 0.45,
     'source': 'manual',
+  });
+}
+
+UserProfile _fakeProfile() {
+  return UserProfile.fromJson({
+    'sex': 'female',
+    'age': 21,
+    'height_cm': 165,
+    'weight_kg': 55,
+    'goal': 'maintain',
+    'activity_level': 'moderate',
+    'body_fat_percent': null,
+    'bmi': 20.2,
+    'updated_at': '2026-11-06T00:00:00Z',
   });
 }
 
@@ -183,5 +201,71 @@ void main() {
     expect(find.text('午餐'), findsOneWidget);
     expect(find.text('米饭（熟）'), findsOneWidget);
     expect(find.text('174'), findsOneWidget);
+  });
+
+  test('个人档案 JSON 能正确解析且保存时不带计算字段', () {
+    final profile = _fakeProfile();
+    expect(profile.bmi, 20.2);
+    expect(profile.bodyFatPercent, isNull);
+    expect(profile.toSaveJson().containsKey('bmi'), isFalse);
+    expect(profile.toSaveJson().containsKey('updated_at'), isFalse);
+  });
+
+  testWidgets('首次档案设置页正常渲染', (WidgetTester tester) async {
+    await tester.pumpWidget(const MaterialApp(home: ProfileFormPage()));
+    expect(find.text('完善个人档案'), findsOneWidget);
+    expect(find.text('体脂率（选填）'), findsOneWidget);
+    expect(find.text('保存档案并进入系统'), findsOneWidget);
+    expect(find.text('增肌'), findsOneWidget);
+  });
+
+  testWidgets('我的页面展示真实档案而不是演示数字', (WidgetTester tester) async {
+    final profile = _fakeProfile();
+    const target = NutritionValues(
+      calories: 2038.64,
+      protein: 66,
+      carbs: 316.24,
+      fat: 56.63,
+    );
+    await tester.pumpWidget(
+      MaterialApp(
+        home: ProfilePage(
+          onLogout: () async {},
+          overviewLoader: () async => ProfileOverview(
+            profile: profile,
+            target: target,
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('165'), findsOneWidget);
+    expect(find.text('55.0'), findsOneWidget);
+    expect(find.text('20.2'), findsOneWidget);
+    expect(find.text('175'), findsNothing);
+    expect(find.text('72'), findsNothing);
+    expect(find.text('退出登录'), findsOneWidget);
+  });
+
+  testWidgets('凭证失效时可以直接重新登录', (WidgetTester tester) async {
+    var logoutCalled = false;
+    await tester.pumpWidget(
+      MaterialApp(
+        home: ProfilePage(
+          onLogout: () async {
+            logoutCalled = true;
+          },
+          overviewLoader: () async =>
+              throw ApiException(401, '登录已过期，请重新登录'),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('重新登录'), findsOneWidget);
+    expect(find.text('退出登录'), findsOneWidget);
+    await tester.tap(find.text('重新登录'));
+    await tester.pump();
+    expect(logoutCalled, isTrue);
   });
 }

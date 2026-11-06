@@ -12,6 +12,11 @@ class SessionStore {
   static bool get hasToken => (_prefs?.getString('token') ?? '').isNotEmpty;
   static String? get token => _prefs?.getString('token');
   static String? get username => _prefs?.getString('username');
+  static bool get needsProfile => _prefs?.getBool('needs_profile') ?? false;
+
+  static Future<void> setNeedsProfile(bool value) async {
+    await _prefs?.setBool('needs_profile', value);
+  }
 
   static Future<void> save(String token, String username) async {
     await _prefs?.setString('token', token);
@@ -21,5 +26,6 @@ class SessionStore {
   static Future<void> clear() async {
     await _prefs?.remove('token');
     await _prefs?.remove('username');
+    await _prefs?.remove('needs_profile');
   }
 }

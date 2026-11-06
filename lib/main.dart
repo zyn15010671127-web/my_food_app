@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'pages/home_page.dart';
 import 'pages/login_page.dart';
+import 'pages/profile_form_page.dart';
 import 'pages/profile_page.dart';
+import 'models/user_profile.dart';
 import 'pages/scan_page.dart';
 import 'pages/search_page.dart';
+import 'services/api_client.dart';
 import 'services/session.dart';
 import 'theme.dart';
 
@@ -21,14 +24,42 @@ class MyApp extends StatefulWidget {
 }
 
 class _MyAppState extends State<MyApp> {
-  // 有 token 就直接进主界面，否则先进登录页
   bool _loggedIn = SessionStore.hasToken;
+  bool _needsProfile = SessionStore.needsProfile;
 
-  void _onLoginSuccess() => setState(() => _loggedIn = true);
+  @override
+  void initState() {
+    super.initState();
+    ApiClient.onUnauthorized = _onLogout;
+  }
+
+  @override
+  void dispose() {
+    ApiClient.onUnauthorized = null;
+    super.dispose();
+  }
+
+  void _onLoginSuccess(bool needsProfile) {
+    SessionStore.setNeedsProfile(needsProfile);
+    setState(() {
+      _loggedIn = true;
+      _needsProfile = needsProfile;
+    });
+  }
+
+  Future<void> _onProfileSaved(UserProfile profile) async {
+    await SessionStore.setNeedsProfile(false);
+    if (mounted) setState(() => _needsProfile = false);
+  }
 
   Future<void> _onLogout() async {
     await SessionStore.clear();
-    if (mounted) setState(() => _loggedIn = false);
+    if (mounted) {
+      setState(() {
+        _loggedIn = false;
+        _needsProfile = false;
+      });
+    }
   }
 
   @override
@@ -37,9 +68,14 @@ class _MyAppState extends State<MyApp> {
       title: '智能饮食搭配推荐系统',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.light,
-      home: _loggedIn
-          ? MainShell(onLogout: _onLogout)
-          : LoginPage(onSuccess: _onLoginSuccess),
+      home: !_loggedIn
+          ? LoginPage(onSuccess: _onLoginSuccess)
+          : _needsProfile
+              ? ProfileFormPage(
+                  onSaved: _onProfileSaved,
+                  onLogout: _onLogout,
+                )
+              : MainShell(onLogout: _onLogout),
     );
   }
 }
@@ -66,7 +102,12 @@ class _MainShellState extends State<MainShell> {
       HomePage(key: _homeKey),
       const ScanPage(),
       const SearchPage(),
-      ProfilePage(onLogout: widget.onLogout),
+      ProfilePage(
+        onLogout: widget.onLogout,
+        onProfileUpdated: () {
+          _homeKey.currentState?.refresh();
+        },
+      ),
     ];
   }
 

@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 import '../services/api_client.dart';
 import '../services/auth_service.dart';
+import '../services/profile_service.dart';
 import '../theme.dart';
 
 /// 登录 / 注册页
 class LoginPage extends StatefulWidget {
-  final VoidCallback onSuccess;
+  final ValueChanged<bool> onSuccess;
   const LoginPage({super.key, required this.onSuccess});
 
   @override
@@ -59,13 +60,16 @@ class _LoginPageState extends State<LoginPage> {
       _error = null;
     });
 
+    final registering = _isRegister;
     try {
-      if (_isRegister) {
+      if (registering) {
         await AuthService.register(username, password);
       } else {
         await AuthService.login(username, password);
       }
-      if (mounted) widget.onSuccess();
+      // hasProfile 表示“已经有档案”，与 needsProfile 的含义正好相反。
+      final hasProfile = registering ? false : await ProfileService.hasProfile();
+      if (mounted) widget.onSuccess(!hasProfile);
     } on ApiException catch (e) {
       setState(() => _error = e.message);
     } catch (_) {

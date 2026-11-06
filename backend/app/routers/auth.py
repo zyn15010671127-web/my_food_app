@@ -6,7 +6,7 @@ from app.deps import SessionDep, UserDep
 from app.models import User, UserProfile, utcnow
 from app.schemas import Login, ProfileRead, ProfileSave, Register, Token, UserRead
 from app.security import create_token, dummy_hash, hash_password, verify_password
-from app.services.nutrition import calculate_target
+from app.services.nutrition import calculate_target, ensure_target, today
 
 router = APIRouter()
 
@@ -49,7 +49,7 @@ def logout(session: SessionDep, user: UserDep) -> Response:
     return Response(status_code=204)
 
 
-@router.put("/api/profile/me", response_model=ProfileRead, tags=["个人档案"], summary="完整保存个人档案")
+@router.put("/api/profile/me", response_model=ProfileRead, tags=["个人档案"], summary="保存个人档案并同步重算今日目标")
 def save_profile(data: ProfileSave, session: SessionDep, user: UserDep):
     calculate_target(data)
     profile = session.get(UserProfile, user.id)
@@ -65,6 +65,8 @@ def save_profile(data: ProfileSave, session: SessionDep, user: UserDep):
         session.rollback()
         raise HTTPException(409, "档案保存冲突，请重试") from None
     session.refresh(profile)
+    # 今日目标必须与本次档案保存在同一请求内更新；历史目标快照保持不变。
+    ensure_target(session, user.id, today(), recalculate=True)
     return profile
 
 
